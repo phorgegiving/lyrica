@@ -1,0 +1,1 @@
+#эндпоинты /current-track, /process, /lyrics/{id}.

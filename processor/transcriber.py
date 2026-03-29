@@ -1,0 +1,1 @@
+#whisper с word_timestamps=True, возвращает список слов с таймингами.
