@@ -7,11 +7,10 @@ from typing import Any, Dict, Optional
 from winsdk.windows.media.control import GlobalSystemMediaTransportControlsSessionManager
 
 try:
-    from config import POLL_INTERVAL
+    from config import POLL_INTERVAL, DEBUG_ACTIVE
 except ModuleNotFoundError:
-    # Supports running this file directly: python api/spotify.py
     sys.path.append(str(Path(__file__).resolve().parents[1]))
-    from config import POLL_INTERVAL
+    from config import POLL_INTERVAL, DEBUG_ACTIVE
 
 
 async def get_media_info() -> Optional[Dict[str, str]]:
@@ -45,7 +44,7 @@ async def get_media_info() -> Optional[Dict[str, str]]:
         return None
 
 
-async def watch_media_changes(poll_interval: float = POLL_INTERVAL) -> None:
+async def watch_media_changes(poll_interval: float = POLL_INTERVAL, debug: bool = DEBUG_ACTIVE) -> None:
     previous_signature: Optional[tuple[str, str, str]] = None
     had_session = True
 
@@ -66,11 +65,12 @@ async def watch_media_changes(poll_interval: float = POLL_INTERVAL) -> None:
             )
 
             if current_signature != previous_signature:
-                print(
-                    f'Track: "{media_info["title"]}" | '
-                    f'Artist: "{media_info["artist"]}" | '
-                    f'Status: {media_info["playback_status"]}'
-                )
+                if debug:
+                    print(
+                        f'Currently playing: {media_info["title"]} '
+                        f'by {media_info["artist"]}. '
+                        f'Status: {media_info["playback_status"]}'
+                    )
                 previous_signature = current_signature
 
         await asyncio.sleep(poll_interval)
