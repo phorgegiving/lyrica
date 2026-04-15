@@ -12,6 +12,11 @@ except ModuleNotFoundError:
     sys.path.append(str(Path(__file__).resolve().parents[1]))
     from config import POLL_INTERVAL, DEBUG_ACTIVE
 
+try:
+    from api.genius import fetch_lyrics
+except ModuleNotFoundError:
+    from genius import fetch_lyrics
+
 
 async def get_media_info() -> Optional[Dict[str, str]]:
     try:
@@ -65,12 +70,20 @@ async def watch_media_changes(poll_interval: float = POLL_INTERVAL, debug: bool 
             )
 
             if current_signature != previous_signature:
+                lyrics = fetch_lyrics(
+                    artist=media_info["artist"],
+                    title=media_info["title"],
+                )
                 if debug:
                     print(
                         f'Currently playing: {media_info["title"]} '
                         f'by {media_info["artist"]}. '
                         f'Status: {media_info["playback_status"]}'
                     )
+                    if lyrics:
+                        print("Successfully fetched lyrics")
+                    else:
+                        print("oops! couldnt fetch lyrics")
                 previous_signature = current_signature
 
         await asyncio.sleep(poll_interval)
