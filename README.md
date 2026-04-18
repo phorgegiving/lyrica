@@ -24,8 +24,8 @@ Frontend: HTML5 / CSS3 (Animations) / JavaScript
 
 # Запуск:
 
-git clone https://github.com/your-username/lyrica.git
-cd lyrica
+git clone https://github.com/your-username/syllable.git
+cd syllable
 pip install -r requirements.txt
 создайте файл .env в корневой папке проекта, вставьте туда:
 GENIUS_ACCESS_TOKEN=your_token_here

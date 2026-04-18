@@ -1,8 +1,8 @@
 import re
 from pathlib import Path
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple
 
-from api.genius import fetch_lyrics
+from api.genius import download_cover_image, fetch_song_data
 from api.youtube import download_audio
 
 def _slugify(value: str) -> str:
@@ -16,18 +16,36 @@ def get_song_data(artist: str, title: str) -> Tuple[str, Path]:
     song_dir = Path("data") / folder_name
     lyrics_path = song_dir / "lyrics.txt"
     audio_path = song_dir / "song.mp3"
+    cover_path = song_dir / "cover.jpg"
 
     song_dir.mkdir(parents=True, exist_ok=True)
     audio_path.parent.mkdir(parents=True, exist_ok=True)
+
+    lyrics: str = ""
+    need_lyrics = not lyrics_path.exists()
+    need_cover = not cover_path.exists()
+    fetched_lyrics: Optional[str] = None
+    cover_url: Optional[str] = None
+
+    if need_lyrics or need_cover:
+        fetched_lyrics, cover_url = fetch_song_data(artist, title)
 
     if lyrics_path.exists():
         print("Lyrics found.")
         lyrics = lyrics_path.read_text(encoding="utf-8")
     else:
         print("Lyrics not found, downloading...")
-        lyrics_result: Optional[str] = fetch_lyrics(artist, title)
-        lyrics = lyrics_result or ""
+        lyrics = fetched_lyrics or ""
         lyrics_path.write_text(lyrics, encoding="utf-8")
+
+    if cover_path.exists():
+        print("Cover found.")
+    else:
+        print("Cover not found, downloading...")
+        if cover_url:
+            download_cover_image(cover_url, cover_path)
+        else:
+            print("Cover URL not found in Genius response.")
 
     if audio_path.exists():
         print("Audio found.")
