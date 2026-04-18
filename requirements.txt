@@ -1,0 +1,19 @@
+winsdk
+python-dotenv 
+pathlib 
+
+lyricsgenius 
+yt-dlp
+librosa 
+pillow
+numpy
+
+# ВНИМАНИЕ: whisperx лучше ставить через git, если будут ошибки
+# pip install git+https://github.com/m-bain/whisperX.git
+torch
+torchvision
+torchaudio
+
+flask
+flask-socketio
+requests

@@ -12,7 +12,7 @@ def _slugify(value: str) -> str:
     return normalized.strip("_")
 
 def get_song_data(artist: str, title: str) -> Tuple[str, Path]:
-    folder_name = _slugify(f"{artist} - {title}")
+    folder_name = _slugify(f"{artist} {title}")
     song_dir = Path("data") / folder_name
     lyrics_path = song_dir / "lyrics.txt"
 
