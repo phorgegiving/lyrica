@@ -4,6 +4,8 @@ pathlib
 
 lyricsgenius 
 yt-dlp
+ffprobe
+ffmpeg
 librosa 
 pillow
 numpy
