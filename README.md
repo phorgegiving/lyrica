@@ -25,9 +25,16 @@ Frontend: HTML5 / CSS3 (Animations) / JavaScript
 # Запуск:
 
 git clone https://github.com/your-username/syllable.git
+
 cd syllable
+
+в requirements.txt есть несколько опциональных пакетов. стоить выбрать подходящие перед установкой
+(по дефолту-пресеты для слабых пк) НЕ ЗАБУДЬ ПЕРЕЙТИ В .\venv\Scripts\Activate.ps1
+
 pip install -r requirements.txt
+
 создайте файл .env в корневой папке проекта, вставьте туда:
+
 GENIUS_ACCESS_TOKEN=your_token_here
 
 python main.py

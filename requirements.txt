@@ -6,15 +6,21 @@ lyricsgenius
 yt-dlp
 ffprobe
 ffmpeg
+imageio_ffmpeg
 librosa 
 pillow
 numpy
+colorthief
 
-# ВНИМАНИЕ: whisperx лучше ставить через git, если будут ошибки
+audio-separator[cpu] #if you have an NVIDIA gpu, change [cpu] to [gpu]
+
+# WARNING: in case of an error, whisperx is better to be installed via git
 # pip install git+https://github.com/m-bain/whisperX.git
-torch
-torchvision
-torchaudio
+
+#packets listed ib below are NOT used.
+#torch
+#torchvision
+#torchaudio
 
 flask
 flask-socketio

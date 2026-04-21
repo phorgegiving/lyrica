@@ -4,6 +4,9 @@ from typing import Optional, Tuple
 
 from api.genius import download_cover_image, fetch_song_data
 from api.youtube import download_audio
+from processor.audio_separator import get_vocals
+
+from colorthief import ColorThief
 
 def _slugify(value: str) -> str:
     normalized = value.strip().lower()
@@ -16,6 +19,8 @@ def get_song_data(artist: str, title: str) -> Tuple[str, Path]:
     song_dir = Path("data") / folder_name
     lyrics_path = song_dir / "lyrics.txt"
     audio_path = song_dir / "song.mp3"
+    instrumental_path = song_dir / "instrumental.wav"
+    vocals_path = song_dir / "vocals.wav"
     cover_path = song_dir / "cover.jpg"
 
     song_dir.mkdir(parents=True, exist_ok=True)
@@ -52,5 +57,11 @@ def get_song_data(artist: str, title: str) -> Tuple[str, Path]:
     else:
         print("Audio not found, downloading...")
         audio_path = download_audio(artist, title, audio_path)
+
+    if instrumental_path.exists() and vocals_path.exists():
+        print("Vocals and Instrumental (separated) exist.")
+    else:
+        print("Vocals and instrumental not found, separating...")
+        get_vocals(audio_path, song_dir)
 
     return lyrics, audio_path
