@@ -74,4 +74,4 @@ def get_song_data(artist: str, title: str) -> Tuple[str, Path]:
         print("Couldnt find alignment.json, aligning...")
         align_lyrics(vocals_path, lyrics_path)
 
-    return lyrics, audio_path
+    return lyrics, audio_path, aligned_path

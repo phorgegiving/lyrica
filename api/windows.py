@@ -1,6 +1,7 @@
 import asyncio
 import sys
 from pathlib import Path
+import time
 
 from typing import Any, Dict, Optional
 
@@ -13,6 +14,7 @@ except ModuleNotFoundError:
     from config import POLL_INTERVAL, DEBUG_ACTIVE
 
 from processor.data_cacher import get_song_data
+from frontend.console_visualiser import stop_visualiser, visualise
 
 
 async def get_media_info() -> Optional[Dict[str, str]]:
@@ -56,9 +58,11 @@ async def watch_media_changes(poll_interval: float = POLL_INTERVAL, debug: bool 
         if media_info is None:
             if had_session:
                 print("No active media session.")
+                stop_visualiser()
                 had_session = False
                 previous_signature = None
         else:
+            start_time = time.time()
             had_session = True
             current_signature = (
                 media_info["title"],
@@ -66,10 +70,15 @@ async def watch_media_changes(poll_interval: float = POLL_INTERVAL, debug: bool 
                 media_info["playback_status"],
             )
             if current_signature != previous_signature and media_info["playback_status"] == 'Playing':
-                lyrics, _audio_path = get_song_data(
+                lyrics, _audio_path, aligned_path = get_song_data(
                     artist=media_info["artist"],
                     title=media_info["title"],
                 )
+
+                entry_point = time.time() - start_time
+                track_key = (media_info["title"], media_info["artist"])
+                visualise(aligned_path, entry_point, track_key)
+                
                 if debug:
                     print(
                         f'Currently playing: {media_info["title"]} '
