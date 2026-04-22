@@ -2,24 +2,24 @@ from __future__ import annotations
 
 import os
 import shutil
+import subprocess
 import time
+import sys
 from pathlib import Path
 from typing import Tuple
 
 import imageio_ffmpeg
-from audio_separator.separator import Separator
 
-
-FAST_MODEL = "UVR-MDX-NET-Inst_HQ_3.onnx"
+demucs_exe = Path(sys.executable).parent / "demucs.exe"
 
 def _ensure_ffmpeg_on_path() -> None:
     ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
     ffmpeg_dir = os.path.dirname(ffmpeg_exe)
-    
+
     target = os.path.join(ffmpeg_dir, "ffmpeg.exe")
     if not os.path.exists(target):
         shutil.copy2(ffmpeg_exe, target)
-    
+
     if ffmpeg_dir not in os.environ["PATH"]:
         os.environ["PATH"] = ffmpeg_dir + os.pathsep + os.environ["PATH"]
 
@@ -34,20 +34,34 @@ def get_vocals(input_path: str | Path, output_dir: str | Path) -> Tuple[Path, Pa
         raise FileNotFoundError(f"Input audio file does not exist: {source}")
 
     cache_dir.mkdir(parents=True, exist_ok=True)
-
-    _ensure_ffmpeg_on_path()  # <-- inject before Separator is instantiated
-
-    separator = Separator(output_dir=str(cache_dir))
-    separator.load_model(model_filename=FAST_MODEL)
+    _ensure_ffmpeg_on_path()
 
     start_time = time.perf_counter()
-    separator.separate(str(source))
+    subprocess.run(
+    [
+        str(demucs_exe),
+        "--two-stems", "vocals",
+        "-n", "htdemucs",
+        "-d", "cuda",
+        "-o", str(cache_dir),
+        str(source),
+    ],
+    check=True,
+)
     elapsed_seconds = time.perf_counter() - start_time
     print(f"Separation completed in {elapsed_seconds:.2f} seconds.")
 
-    if not vocals_target.exists() or not instrumental_target.exists():
+    stem_dir = cache_dir / "htdemucs" / source.stem
+    vocals_out = stem_dir / "vocals.wav"
+    instrumental_out = stem_dir / "no_vocals.wav"
+
+    if not vocals_out.exists() or not instrumental_out.exists():
         raise RuntimeError(
-            "Track separation finished, but expected vocals.wav or instrumental.wav is missing."
+            f"Demucs finished but expected files are missing in {stem_dir}. "
+            f"Contents: {list(stem_dir.iterdir()) if stem_dir.exists() else 'directory not found'}"
         )
+
+    vocals_out.rename(vocals_target)
+    instrumental_out.rename(instrumental_target)
 
     return vocals_target, instrumental_target
