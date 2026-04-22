@@ -13,6 +13,11 @@ from typing import Dict, List
 import whisperx
 import torch
 
+import warnings
+
+warnings.filterwarnings("ignore", category=UserWarning, module="pyannote.audio.core.io")
+warnings.filterwarnings("ignore", category=UserWarning)
+
 
 WHISPER_MODEL = "small"
 
@@ -43,32 +48,10 @@ def _detect_device() -> str:
 
 def _clean_lyrics(raw_text: str) -> str:
     cleaned = re.sub(r"\[[^\]]*\]", "", raw_text)  # remove [Verse], [Chorus] etc
-    cleaned = re.sub(r"\n\s*\n+", "\n", cleaned)
+    cleaned = cleaned.replace("\\n", " ")
+    cleaned = re.sub(r"\s*\n\s*", " ", cleaned)
+    cleaned = re.sub(r"\s+", " ", cleaned)
     return cleaned.strip()
-
-def _match_lyrics_to_segments(
-    transcribed_segments: List[Dict],
-    lyrics_lines: List[str],
-) -> List[Dict]:
-
-    if not transcribed_segments or not lyrics_lines:
-        return transcribed_segments
-
-    result = []
-    seg_count = len(transcribed_segments)
-    line_count = len(lyrics_lines)
-
-    for i, segment in enumerate(transcribed_segments):
-        #пропорционально маппим строку на сегмент
-        line_idx = round(i * line_count / seg_count)
-        line_idx = min(line_idx, line_count - 1)
-        result.append({
-            "text": lyrics_lines[line_idx],
-            "start": segment["start"],
-            "end": segment["end"],
-        })
-
-    return result
 
 def align_lyrics(audio_path: str | Path, text_path: str | Path) -> Path:
     audio_file = Path(audio_path)
@@ -87,7 +70,6 @@ def align_lyrics(audio_path: str | Path, text_path: str | Path) -> Path:
     lyrics = _clean_lyrics(lyrics_file.read_text(encoding="utf-8"))
     if not lyrics:
         raise ValueError("Lyrics file is empty after cleaning.")
-    lyrics_lines = [line.strip() for line in lyrics.splitlines() if line.strip()]
 
     device = _detect_device()
     _ensure_ffmpeg_on_path()
@@ -95,25 +77,31 @@ def align_lyrics(audio_path: str | Path, text_path: str | Path) -> Path:
     compute_type = "float16" if device == "cuda" else "int8"
     model = whisperx.load_model(WHISPER_MODEL, device=device, compute_type=compute_type)
     audio = whisperx.load_audio(str(audio_file))
+    total_duration = audio.shape[0] / 16000
 
     detection = model.transcribe(audio, batch_size=16)
     language_code = detection.get("language")
     if not language_code:
         raise RuntimeError("Could not detect language from audio.")
-    print(f"Detected language: {language_code}, segments: {len(detection['segments'])}")
+    print(f"Detected language: {language_code}")
 
-    segments = _match_lyrics_to_segments(detection["segments"], lyrics_lines)
+    full_segment = [{
+        "text": lyrics,
+        "start": 0.0,
+        "end": total_duration,
+    }]
 
     align_model, align_metadata = whisperx.load_align_model(
         language_code=language_code,
         device=device,
     )
     aligned = whisperx.align(
-        segments,
+        full_segment,
         align_model,
         align_metadata,
         audio,
         device,
+        return_char_alignments=False,
     )
 
     words: List[Dict] = []

@@ -68,6 +68,8 @@ def get_song_data(artist: str, title: str) -> Tuple[str, Path]:
 
     if aligned_path.exists():
         print("alignment.json exists.")
+    elif not lyrics_path.read_text(encoding="utf-8"):
+        print("Couldnt find alignment.json, the song is instrumental/lyrics do not exist.")
     else:
         print("Couldnt find alignment.json, aligning...")
         align_lyrics(vocals_path, lyrics_path)
