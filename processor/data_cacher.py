@@ -5,6 +5,7 @@ from typing import Optional, Tuple
 from api.genius import download_cover_image, fetch_song_data
 from api.youtube import download_audio
 from processor.audio_separator import get_vocals
+from processor.alignment_engine import align_lyrics
 
 from colorthief import ColorThief
 
@@ -20,6 +21,7 @@ def get_song_data(artist: str, title: str) -> Tuple[str, Path]:
     lyrics_path = song_dir / "lyrics.txt"
     audio_path = song_dir / "song.mp3"
     instrumental_path = song_dir / "instrumental.wav"
+    aligned_path = song_dir / "alignment.json"
     vocals_path = song_dir / "vocals.wav"
     cover_path = song_dir / "cover.jpg"
 
@@ -63,5 +65,11 @@ def get_song_data(artist: str, title: str) -> Tuple[str, Path]:
     else:
         print("Vocals and instrumental not found, separating...")
         get_vocals(audio_path, song_dir)
+
+    if aligned_path.exists():
+        print("alignment.json exists.")
+    else:
+        print("Couldnt find alignment.json, aligning...")
+        align_lyrics(vocals_path, lyrics_path)
 
     return lyrics, audio_path
