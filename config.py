@@ -8,3 +8,5 @@ SERVER_MODE = True # toggles pytorch and other AI, only uses already proceeded a
 # SETTINGS BELOW ARE ONLY APPLIED IF SERVER_MODE = TRUE
 
 WHISPER_MODEL = "small" # model choice for WhisperX 
+GLOBAL_OFFSET_SECONDS = 0.0 # 
+SNAP_TOLERANCE_RATIO = 0.45 # 

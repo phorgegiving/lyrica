@@ -8,6 +8,7 @@ from api.youtube import download_audio
 from processor.audio_separator import get_vocals
 from processor.alignment_engine import align_lyrics
 from processor.audio_analyzer import analyze_audio
+from processor.quantizer import quantize_alignment
 
 from colorthief import ColorThief
 
@@ -35,7 +36,8 @@ def get_song_data(artist: str, title: str) -> Tuple[str, Path]:
     instrumental_path = song_dir / "instrumental.wav"
     rhythm_path = song_dir / "rhythm.json"
     vocals_path = song_dir / "vocals.wav"
-    aligned_path = song_dir / "alignment.json"
+    alignment_path = song_dir / "alignment.json"
+    master_sync_path = song_dir / "master_synch.json"
     cover_path = song_dir / "cover.jpg"
 
     song_dir.mkdir(parents=True, exist_ok=True)
@@ -85,12 +87,20 @@ def get_song_data(artist: str, title: str) -> Tuple[str, Path]:
         _debug_print("breaking down rhythm patterns...")
         analyze_audio(instrumental_path)
 
-    if aligned_path.exists():
+    if alignment_path.exists():
         _debug_print("alignment.json exists.")
     elif not lyrics_path.read_text(encoding="utf-8"):
-        _debug_print("Couldnt find alignment.json, the song is instrumental/lyrics do not exist.")
+        _debug_print("Couldnt find the lyrics, the song is instrumental/lyrics do not exist.")
     else:
         _debug_print("Couldnt find alignment.json, aligning...")
         align_lyrics(vocals_path, lyrics_path)
 
-    return lyrics, audio_path, aligned_path
+    if master_sync_path.exists():
+        _debug_print("Found master_sync.json. proceeding...")
+    elif not lyrics_path.read_text(encoding="utf-8"):
+        _debug_print("lyrics do not exist, skipping creation of master_alignment.")
+    else:
+        _debug_print("Couldnt find master_sync.json, parsing the alignment and rhythm...")
+        quantize_alignment(alignment_path, rhythm_path, song_dir)
+
+    return lyrics, audio_path, alignment_path
