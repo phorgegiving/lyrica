@@ -95,9 +95,11 @@ def align_lyrics(audio_path: str | Path, text_path: str | Path) -> Path:
             detection = model.transcribe(audio, batch_size=batch_size)
             language_code = detection.get("language")
             if not language_code:
-                raise RuntimeError("Could not detect language from audio.")
-            if language_code == "la":
-                raise RuntimeError("Unsupported language detected (may be a mistake).")
+                print("Could not detect language from audio.")
+                return
+            if language_code == "la" or language_code == "nn":
+                print("Unsupported language detected in alignment_engine.py (may be a mistake).")
+                return
             print(f"Detected language: {language_code}")
 
             full_segment = [{

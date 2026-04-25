@@ -1,4 +1,5 @@
 import re
+import os
 import sys
 from pathlib import Path
 from typing import Optional, Tuple
@@ -9,14 +10,15 @@ from processor.audio_separator import get_vocals
 from processor.alignment_engine import align_lyrics
 from processor.audio_analyzer import analyze_audio
 from processor.quantizer import quantize_alignment
+from processor.color_analyzer import analyze_cover
 
 from colorthief import ColorThief
 
 try:
-    from config import SERVER_MODE, PIPELINE_DEBUG_ACTIVE
+    from config import SERVER_MODE, PIPELINE_DEBUG_ACTIVE, CLEAR_PIPELINE_ON_NEW_SONG
 except ModuleNotFoundError:
     sys.path.append(str(Path(__file__).resolve().parents[1]))
-    from config import SERVER_MODE, PIPELINE_DEBUG_ACTIVE
+    from config import SERVER_MODE, PIPELINE_DEBUG_ACTIVE, CLEAR_PIPELINE_ON_NEW_SONG
 
 def _debug_print(*args: str, **kwargs: str):
     if PIPELINE_DEBUG_ACTIVE:
@@ -29,6 +31,11 @@ def _slugify(value: str) -> str:
     return normalized.strip("_")
 
 def get_song_data(artist: str, title: str) -> Tuple[str, Path]:
+    if CLEAR_PIPELINE_ON_NEW_SONG and PIPELINE_DEBUG_ACTIVE:
+        os.system('cls' if os.name == 'nt' else 'clear')
+
+    _debug_print(f"Proceeding song: {title} by {artist}")
+
     folder_name = _slugify(f"{artist} {title}")
     song_dir = Path("data") / folder_name
     lyrics_path = song_dir / "lyrics.txt"
@@ -66,6 +73,8 @@ def get_song_data(artist: str, title: str) -> Tuple[str, Path]:
         _debug_print("Cover not found, downloading...")
         if cover_url:
             download_cover_image(cover_url, cover_path)
+            analyze_cover(cover_path)
+            _debug_print("Broke the cover down by primary colors...")
         else:
             _debug_print("Cover URL not found in Genius response.")
 

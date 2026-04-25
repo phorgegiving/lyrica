@@ -38,13 +38,13 @@ async def get_media_info() -> Optional[Dict[str, str]]:
         title = (media_properties.title or "").strip()
         artist = (media_properties.artist or "").strip()
 
-        return {
-            "title": title or "Unknown Title",
-            "artist": artist or "Unknown Artist",
-            "playback_status": status_name,
-        }
+        if title and artist:
+            return {
+                "title": title,
+                "artist": artist,
+                "playback_status": status_name,
+            }
     except Exception:
-        # fallback
         return None
 
 
