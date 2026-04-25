@@ -18,6 +18,7 @@ import warnings
 
 warnings.filterwarnings("ignore", category=UserWarning, module="pyannote.audio.core.io")
 warnings.filterwarnings("ignore", category=UserWarning)
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
 try:
     from config import WHISPER_MODEL
@@ -50,6 +51,11 @@ def _ensure_ffmpeg_on_path() -> None:
 def _detect_device() -> str:
     return "cuda" if torch.cuda.is_available() else "cpu"
 
+def _free_cuda_cache() -> None:
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        torch.cuda.ipc_collect()
+
 def _clean_lyrics(raw_text: str) -> str:
     cleaned = re.sub(r"\[[^\]]*\]", "", raw_text)  # remove [Verse], [Chorus] etc
     cleaned = cleaned.replace("\\n", " ")
@@ -76,38 +82,54 @@ def align_lyrics(audio_path: str | Path, text_path: str | Path) -> Path:
         if not lyrics:
             raise ValueError("Lyrics file is empty after cleaning, aborting.")
 
-        device = _detect_device()
         _ensure_ffmpeg_on_path()
-
-        compute_type = "float16" if device == "cuda" else "int8"
-        model = whisperx.load_model(WHISPER_MODEL, device=device, compute_type=compute_type)
         audio = whisperx.load_audio(str(audio_file))
         total_duration = audio.shape[0] / 16000
+        if total_duration >= 1500:
+            print("file too large, aborting text alignment")
+            return
 
-        detection = model.transcribe(audio, batch_size=16)
-        language_code = detection.get("language")
-        if not language_code:
-            raise RuntimeError("Could not detect language from audio.")
-        print(f"Detected language: {language_code}")
+        def _run_alignment(device: str, batch_size: int) -> Dict:
+            compute_type = "float16" if device == "cuda" else "int8"
+            model = whisperx.load_model(WHISPER_MODEL, device=device, compute_type=compute_type)
+            detection = model.transcribe(audio, batch_size=batch_size)
+            language_code = detection.get("language")
+            if not language_code:
+                raise RuntimeError("Could not detect language from audio.")
+            if language_code == "la":
+                raise RuntimeError("Unsupported language detected (may be a mistake).")
+            print(f"Detected language: {language_code}")
 
-        full_segment = [{
-            "text": lyrics,
-            "start": 0.0,
-            "end": total_duration,
-        }]
+            full_segment = [{
+                "text": lyrics,
+                "start": 0.0,
+                "end": total_duration,
+            }]
+            align_model, align_metadata = whisperx.load_align_model(
+                language_code=language_code,
+                device=device,
+            )
+            return whisperx.align(
+                full_segment,
+                align_model,
+                align_metadata,
+                audio,
+                device,
+                return_char_alignments=False,
+            )
 
-        align_model, align_metadata = whisperx.load_align_model(
-            language_code=language_code,
-            device=device,
-        )
-        aligned = whisperx.align(
-            full_segment,
-            align_model,
-            align_metadata,
-            audio,
-            device,
-            return_char_alignments=False,
-        )
+        device = _detect_device()
+        aligned: Dict
+        if device == "cuda":
+            try:
+                aligned = _run_alignment(device="cuda", batch_size=4) #lower batch size => lower load on cpu
+            except torch.OutOfMemoryError:
+                print("CUDA out of memory during alignment. Retrying on CPU.")
+                _free_cuda_cache()
+                gc.collect()
+                aligned = _run_alignment(device="cpu", batch_size=4)
+        else:
+            aligned = _run_alignment(device="cpu", batch_size=4)
 
         words: List[Dict] = []
         for word_data in aligned.get("word_segments", []):
@@ -126,4 +148,4 @@ def align_lyrics(audio_path: str | Path, text_path: str | Path) -> Path:
         return output_path
     finally:
         gc.collect()
-        torch.cuda.empty_cache()
+        _free_cuda_cache()

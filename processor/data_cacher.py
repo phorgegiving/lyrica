@@ -7,6 +7,7 @@ from api.genius import download_cover_image, fetch_song_data
 from api.youtube import download_audio
 from processor.audio_separator import get_vocals
 from processor.alignment_engine import align_lyrics
+from processor.audio_analyzer import analyze_audio
 
 from colorthief import ColorThief
 
@@ -32,8 +33,9 @@ def get_song_data(artist: str, title: str) -> Tuple[str, Path]:
     lyrics_path = song_dir / "lyrics.txt"
     audio_path = song_dir / "song.mp3"
     instrumental_path = song_dir / "instrumental.wav"
-    aligned_path = song_dir / "alignment.json"
+    rhythm_path = song_dir / "rhythm.json"
     vocals_path = song_dir / "vocals.wav"
+    aligned_path = song_dir / "alignment.json"
     cover_path = song_dir / "cover.jpg"
 
     song_dir.mkdir(parents=True, exist_ok=True)
@@ -76,6 +78,12 @@ def get_song_data(artist: str, title: str) -> Tuple[str, Path]:
     else:
         _debug_print("Vocals and instrumental not found, separating...")
         get_vocals(audio_path, song_dir)
+
+    if rhythm_path.exists():
+        _debug_print("rhythm file exists.")
+    else:
+        _debug_print("breaking down rhythm patterns...")
+        analyze_audio(instrumental_path)
 
     if aligned_path.exists():
         _debug_print("alignment.json exists.")
