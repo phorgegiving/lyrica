@@ -19,8 +19,11 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="pyannote.audio.core.io")
 warnings.filterwarnings("ignore", category=UserWarning)
 
-
-WHISPER_MODEL = "small"
+try:
+    from config import WHISPER_MODEL
+except ModuleNotFoundError:
+    sys.path.append(str(Path(__file__).resolve().parents[1]))
+    from config import WHISPER_MODEL
 
 if sys.platform == 'win32': #костыль, увы
     venv_site_packages = os.path.join(os.path.dirname(sys.executable), "Lib", "site-packages")

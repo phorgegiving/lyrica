@@ -1,4 +1,5 @@
 import re
+import sys
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -9,6 +10,16 @@ from processor.alignment_engine import align_lyrics
 
 from colorthief import ColorThief
 
+try:
+    from config import SERVER_MODE, PIPELINE_DEBUG_ACTIVE
+except ModuleNotFoundError:
+    sys.path.append(str(Path(__file__).resolve().parents[1]))
+    from config import SERVER_MODE, PIPELINE_DEBUG_ACTIVE
+
+def _debug_print(*args: str, **kwargs: str):
+    if PIPELINE_DEBUG_ACTIVE:
+        print("[PIPELINE DEBUG]", *args, **kwargs)
+        
 def _slugify(value: str) -> str:
     normalized = value.strip().lower()
     normalized = re.sub(r"\s+", "_", normalized)
@@ -38,40 +49,40 @@ def get_song_data(artist: str, title: str) -> Tuple[str, Path]:
         fetched_lyrics, cover_url = fetch_song_data(artist, title)
 
     if lyrics_path.exists():
-        print("Lyrics found.")
+        _debug_print("Lyrics found.")
         lyrics = lyrics_path.read_text(encoding="utf-8")
     else:
-        print("Lyrics not found, downloading...")
+        _debug_print("Lyrics not found, downloading...")
         lyrics = fetched_lyrics or ""
         lyrics_path.write_text(lyrics, encoding="utf-8")
 
     if cover_path.exists():
-        print("Cover found.")
+        _debug_print("Cover found.")
     else:
-        print("Cover not found, downloading...")
+        _debug_print("Cover not found, downloading...")
         if cover_url:
             download_cover_image(cover_url, cover_path)
         else:
-            print("Cover URL not found in Genius response.")
+            _debug_print("Cover URL not found in Genius response.")
 
     if audio_path.exists():
-        print("Audio found.")
+        _debug_print("Audio found.")
     else:
-        print("Audio not found, downloading...")
+        _debug_print("Audio not found, downloading...")
         audio_path = download_audio(artist, title, audio_path)
 
     if instrumental_path.exists() and vocals_path.exists():
-        print("Vocals and Instrumental (separated) exist.")
+        _debug_print("Vocals and Instrumental (separated) exist.")
     else:
-        print("Vocals and instrumental not found, separating...")
+        _debug_print("Vocals and instrumental not found, separating...")
         get_vocals(audio_path, song_dir)
 
     if aligned_path.exists():
-        print("alignment.json exists.")
+        _debug_print("alignment.json exists.")
     elif not lyrics_path.read_text(encoding="utf-8"):
-        print("Couldnt find alignment.json, the song is instrumental/lyrics do not exist.")
+        _debug_print("Couldnt find alignment.json, the song is instrumental/lyrics do not exist.")
     else:
-        print("Couldnt find alignment.json, aligning...")
+        _debug_print("Couldnt find alignment.json, aligning...")
         align_lyrics(vocals_path, lyrics_path)
 
     return lyrics, audio_path, aligned_path

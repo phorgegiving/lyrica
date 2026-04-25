@@ -8,10 +8,10 @@ from typing import Any, Dict, Optional
 from winsdk.windows.media.control import GlobalSystemMediaTransportControlsSessionManager
 
 try:
-    from config import POLL_INTERVAL, DEBUG_ACTIVE
+    from config import POLL_INTERVAL, WIN_DEBUG_ACTIVE
 except ModuleNotFoundError:
     sys.path.append(str(Path(__file__).resolve().parents[1]))
-    from config import POLL_INTERVAL, DEBUG_ACTIVE
+    from config import POLL_INTERVAL, WIN_DEBUG_ACTIVE
 
 from processor.data_cacher import get_song_data
 from frontend.console_visualiser import stop_visualiser, visualise
@@ -48,7 +48,7 @@ async def get_media_info() -> Optional[Dict[str, str]]:
         return None
 
 
-async def watch_media_changes(poll_interval: float = POLL_INTERVAL, debug: bool = DEBUG_ACTIVE) -> None:
+async def watch_media_changes(poll_interval: float = POLL_INTERVAL, debug: bool = WIN_DEBUG_ACTIVE) -> None:
     previous_signature: Optional[tuple[str, str, str]] = None
     had_session = True
 

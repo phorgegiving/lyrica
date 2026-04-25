@@ -25,3 +25,5 @@ audio-separator[cpu] #if you have an NVIDIA gpu, change [cpu] to [gpu]
 flask
 flask-socketio
 requests
+
+pymongo[srv]
