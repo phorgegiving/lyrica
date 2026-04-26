@@ -3,6 +3,7 @@ import os
 import sys
 from pathlib import Path
 from typing import Optional, Tuple
+import anyascii
 
 from api.genius import download_cover_image, fetch_song_data
 from api.youtube import download_audio
@@ -25,7 +26,8 @@ def _debug_print(*args: str, **kwargs: str):
         print("[PIPELINE DEBUG]", *args, **kwargs)
         
 def _slugify(value: str) -> str:
-    normalized = value.strip().lower()
+    normalized = anyascii.anyascii(value)
+    normalized = normalized.strip().lower()
     normalized = re.sub(r"\s+", "_", normalized)
     normalized = re.sub(r"[^a-z0-9_\-]", "", normalized)
     return normalized.strip("_")

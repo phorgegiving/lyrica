@@ -13,6 +13,8 @@ numpy
 colorthief
 
 audio-separator[cpu] #if you have an NVIDIA gpu, change [cpu] to [gpu]
+lingua-language-detector
+anyascii
 
 # WARNING: in case of an error, whisperx is better to be installed via git
 # pip install git+https://github.com/m-bain/whisperX.git

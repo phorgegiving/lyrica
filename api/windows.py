@@ -97,6 +97,7 @@ async def watch_media_changes(poll_interval: float = POLL_INTERVAL, debug: bool 
 
 if __name__ == "__main__":
     try:
+        print("Started Windows listener...")
         asyncio.run(watch_media_changes())
     except KeyboardInterrupt:
         print("Stopped media watcher.")

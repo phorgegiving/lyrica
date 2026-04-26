@@ -13,12 +13,28 @@ from typing import Dict, List
 import whisperx
 import torch
 import gc
+from lingua import Language, LanguageDetectorBuilder
 
 import warnings
 
 warnings.filterwarnings("ignore", category=UserWarning, module="pyannote.audio.core.io")
 warnings.filterwarnings("ignore", category=UserWarning)
 os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+
+_LINGUA_TO_WHISPERX = {
+    Language.ENGLISH: "en",
+    Language.JAPANESE: "ja",
+    Language.KOREAN: "ko",
+    Language.FRENCH: "fr",
+    Language.GERMAN: "de",
+    Language.SPANISH: "es",
+    Language.RUSSIAN: "ru",
+    Language.ITALIAN: "it",
+    Language.PORTUGUESE: "pt",
+    Language.CHINESE: "zh",
+}
+
+_detector = LanguageDetectorBuilder.from_languages(*_LINGUA_TO_WHISPERX.keys()).build()
 
 try:
     from config import WHISPER_MODEL
@@ -63,6 +79,13 @@ def _clean_lyrics(raw_text: str) -> str:
     cleaned = re.sub(r"\s+", " ", cleaned)
     return cleaned.strip()
 
+def _detect_language(text: str) -> str:
+    lang = _detector.detect_language_of(text)
+    code = _LINGUA_TO_WHISPERX.get(lang)
+    if not code:
+        raise RuntimeError(f"Unsupported language detected: {lang}")
+    return code
+
 def align_lyrics(audio_path: str | Path, text_path: str | Path) -> Path:
     try:
         audio_file = Path(audio_path)
@@ -90,16 +113,7 @@ def align_lyrics(audio_path: str | Path, text_path: str | Path) -> Path:
             return
 
         def _run_alignment(device: str, batch_size: int) -> Dict:
-            compute_type = "float16" if device == "cuda" else "int8"
-            model = whisperx.load_model(WHISPER_MODEL, device=device, compute_type=compute_type)
-            detection = model.transcribe(audio, batch_size=batch_size)
-            language_code = detection.get("language")
-            if not language_code:
-                print("Could not detect language from audio.")
-                return
-            if language_code == "la" or language_code == "nn":
-                print("Unsupported language detected in alignment_engine.py (may be a mistake).")
-                return
+            language_code = _detect_language(lyrics)
             print(f"Detected language: {language_code}")
 
             full_segment = [{
